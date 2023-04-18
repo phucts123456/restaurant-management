@@ -1,4 +1,5 @@
-﻿using Mango.Services.ShoppingCartAPI.Messages;
+﻿using Mango.MessageBus;
+using Mango.Services.ShoppingCartAPI.Messages;
 using Mango.Services.ShoppingCartAPI.Models.Dto;
 using Mango.Services.ShoppingCartAPI.Repository;
 using Microsoft.AspNetCore.Http;
@@ -11,15 +12,19 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
     public class CartAPIController : ControllerBase
     {
         private readonly ICartRepository _cartRepository;
+        private readonly IMessageBus _messageBus;
         protected ResponseDto _response;
+        private readonly IConfiguration _configuration;
 
-        public CartAPIController(ICartRepository cartRepository)
-        {
-            _cartRepository = cartRepository;
-            this._response = new ResponseDto();
-        }
+		public CartAPIController(ICartRepository cartRepository, IMessageBus messageBus, IConfiguration configuration)
+		{
+			_cartRepository = cartRepository;
+			this._response = new ResponseDto();
+			_messageBus = messageBus;
+			_configuration = configuration;
+		}
 
-        [HttpGet("GetCart/{userId}")]
+		[HttpGet("GetCart/{userId}")]
         public async Task<object> GetCart(string userId)
         {
             try
@@ -95,11 +100,13 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                     return BadRequest();
                 }
 				checkoutHeader.cartDetails = cartDto.CartDetails;
-                //logic to add message to process order.
-            }
+				//logic to add message to process order.
+				Console.WriteLine("TopicName: " + _configuration.GetConnectionString("CheckoutMessageTopic"));
+				 await _messageBus.PublishMessage(checkoutHeader, "checkoutmessagetopic");
+
+			}
             catch (Exception ex)
             {
-
                 _response.IsSuccess = false;
                 _response.ErrorMessages = new List<string>() { ex.ToString() };
             }
