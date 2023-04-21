@@ -12,16 +12,18 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
     public class CartAPIController : ControllerBase
     {
         private readonly ICartRepository _cartRepository;
+        private readonly ICouponRepository _couponRepository;
         private readonly IMessageBus _messageBus;
         protected ResponseDto _response;
         private readonly IConfiguration _configuration;
 
-		public CartAPIController(ICartRepository cartRepository, IMessageBus messageBus, IConfiguration configuration)
+		public CartAPIController(ICartRepository cartRepository, IMessageBus messageBus, IConfiguration configuration, ICouponRepository couponRepository)
 		{
 			_cartRepository = cartRepository;
 			this._response = new ResponseDto();
 			_messageBus = messageBus;
 			_configuration = configuration;
+			_couponRepository = couponRepository;
 		}
 
 		[HttpGet("GetCart/{userId}")]
@@ -99,9 +101,18 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                 {
                     return BadRequest();
                 }
+                if (!string.IsNullOrEmpty(checkoutHeader.CouponCode))
+                {
+                    CouponDto coupon = await _couponRepository.GetCoupon(checkoutHeader.CouponCode);
+                    if(checkoutHeader.DiscountTotal != coupon.DiscountAmount)
+                    {
+                        _response.IsSuccess = false;
+                        _response.ErrorMessages = new List<string>() { "Coupon Price has changed, please confirm" };
+                        _response.DisplayMessage = "Coupon Price has changed, please confirm";
+                    }
+                }
 				checkoutHeader.cartDetails = cartDto.CartDetails;
 				//logic to add message to process order.
-				Console.WriteLine("TopicName: " + _configuration.GetConnectionString("CheckoutMessageTopic"));
 				 await _messageBus.PublishMessage(checkoutHeader, "checkoutmessagetopic");
 
 			}

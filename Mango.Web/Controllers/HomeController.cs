@@ -62,6 +62,8 @@ namespace Mango.Web.Controllers
             { 
                 Count = productDto.Count,
                 ProductId = productDto.ProductId,
+                CartHeaderId = 4,
+                CartDetailId= 1,
             };
 
             var resp = await _productService.GetAllProductByIdAsync<ResponseDto>(productDto.ProductId, "");

@@ -72,7 +72,7 @@ namespace Mango.Services.ShoppingCartAPI.Repository
                 //check if details has same product
                 var CartDetailsFromDb = await _context.CartDetails.AsNoTracking() //no updating cartDetail from db
                     .FirstOrDefaultAsync(u => u.ProductId == cart.CartDetails.FirstOrDefault().ProductId
-                    && u.CartDetailId == cartHeaderFromDb.CartHeaderId);
+                    && u.CartHeaderId == cartHeaderFromDb.CartHeaderId);
                 if(CartDetailsFromDb == null)
                 {
                     //create details
@@ -86,6 +86,8 @@ namespace Mango.Services.ShoppingCartAPI.Repository
                     //update the count / cart detail
                     cart.CartDetails.FirstOrDefault().Product = null; // product has been added above -> no need to add it again
                     cart.CartDetails.FirstOrDefault().Count += CartDetailsFromDb.Count;
+                    cart.CartDetails.FirstOrDefault().CartDetailId = CartDetailsFromDb.CartDetailId;
+                    cart.CartDetails.FirstOrDefault().CartHeaderId = CartDetailsFromDb.CartHeaderId;
                     _context.CartDetails.Update(cart.CartDetails.FirstOrDefault());
                     await _context.SaveChangesAsync();
                 }
